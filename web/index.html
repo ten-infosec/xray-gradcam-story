@@ -1,111 +1,151 @@
+<meta charset="utf-8">
 <title>폐렴 AI 시선 데모</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700&family=Noto+Sans+KR:wght@400;500;700&display=swap">
 <style>
+/* Paper page around a dark reading-room stage. One accent: the red of the evidence map. */
 :root{
-  --bg:#eef2f3; --fg:#14212a; --muted:#5a6a73; --line:#d3dce0; --panel:#ffffff; --accent:#0d7480; --heat:#c0392b;
-  --stage:#05080a; --stage-fg:#e6eef1; --stage-muted:#8ea2ad; --glass:#0b1216d9; --glass-line:#ffffff1a; --teal:#4cc0cc; --ok:#5cc497; --red:#ef6a5a;
-  --f-body:"IBM Plex Sans KR",system-ui,sans-serif; --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --bg:#f2efe9; --fg:#1b1916; --muted:#6d675e; --line:#d9d3c8; --accent:#b8402c;
+  --stage:#0c0b0a; --stage-fg:#ece8e1; --stage-muted:#8f887d; --stage-line:#ffffff1c; --red:#d9533c; --red-soft:#d9533c33; --film:#e8e4dc;
+  --f-serif:"Noto Serif KR",Georgia,serif; --f-sans:"Noto Sans KR",system-ui,sans-serif;
 }
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0f1519;--fg:#e2eaee;--muted:#93a5af;--line:#26343c;--panel:#151e23;--accent:#4cc0cc;--heat:#ef6a5a;color-scheme:dark}}
-:root[data-theme="dark"]{--bg:#0f1519;--fg:#e2eaee;--muted:#93a5af;--line:#26343c;--panel:#151e23;--accent:#4cc0cc;--heat:#ef6a5a;color-scheme:dark}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#141311;--fg:#ece8e1;--muted:#a19a8e;--line:#2c2a26;--accent:#e2694f;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#141311;--fg:#ece8e1;--muted:#a19a8e;--line:#2c2a26;--accent:#e2694f;color-scheme:dark}
 *{box-sizing:border-box}
-body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:16px;line-height:1.65;word-break:keep-all}
-.wrap{max-width:1120px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-header.intro{padding-block:40px 28px}
-.eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
-h1{font-weight:700;font-size:clamp(28px,4.4vw,44px);line-height:1.2;margin:8px 0 12px;text-wrap:balance}
-.lede{max-width:62ch;color:var(--muted);margin:0}
-.demo-note{display:inline-flex;gap:8px;align-items:center;margin-top:16px;font-size:13px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:4px 12px;background:var(--panel)}
-.demo-note b{color:var(--heat);font-weight:600}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-sans);font-size:16px;line-height:1.7;word-break:keep-all;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px;margin:0 auto;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px))}
+header.intro{padding-block:72px 56px;display:grid;gap:18px}
+.eyebrow{font-size:12px;letter-spacing:.14em;color:var(--muted)}
+h1{font-family:var(--f-serif);font-weight:700;font-size:clamp(32px,5.2vw,58px);line-height:1.18;margin:0;max-width:16ch;text-wrap:balance;letter-spacing:-.01em}
+.lede{max-width:56ch;color:var(--muted);margin:0;font-size:17px}
+.demo-note{margin:0;font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:14px;max-width:56ch}
+.demo-note b{color:var(--accent);font-weight:500;margin-right:6px}
 
-.scrolly{height:900vh;position:relative}
-.stage{position:sticky;top:env(safe-area-inset-top,0px);height:100svh;background:radial-gradient(120% 90% at 60% 45%,#0c1a20 0%,var(--stage) 60%);color:var(--stage-fg);overflow:hidden}
+.scrolly{height:1050vh;position:relative}
+.stage{position:sticky;top:env(safe-area-inset-top,0px);height:100svh;background:var(--stage);color:var(--stage-fg);overflow:hidden}
 #gl{position:absolute;inset:0;width:100%;height:100%;display:block}
-.vignette{position:absolute;inset:0;pointer-events:none;z-index:1;background:radial-gradient(120% 90% at 60% 45%,transparent 45%,#05080acc 100%)}
-.hud{position:absolute;top:0;left:0;right:0;z-index:3;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:14px 0;display:flex;gap:14px;align-items:center;font-family:var(--f-mono);font-size:12px;color:var(--stage-muted)}
-.bar{flex:1;height:2px;background:#ffffff1f;border-radius:2px;overflow:hidden}
-.bar i{display:block;height:100%;width:0;background:var(--teal)}
-#pval{font-variant-numeric:tabular-nums;min-width:7ch;text-align:right}
-#stageName{color:var(--stage-fg);min-width:9ch}
-.tag{position:absolute;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:3;font-family:var(--f-mono);font-size:11px;color:var(--stage-muted)}
+.scrim{position:absolute;inset:0;pointer-events:none;z-index:1;background:linear-gradient(90deg,#0c0b0af2 0%,#0c0b0aa8 30%,transparent 52%)}
+.hud{position:absolute;left:0;right:0;bottom:0;z-index:3;padding-left:max(28px,env(safe-area-inset-left,0px));padding-right:max(28px,env(safe-area-inset-right,0px));padding-block:0 calc(22px + env(safe-area-inset-bottom,0px));display:flex;gap:18px;align-items:center;font-size:12px;color:var(--stage-muted);letter-spacing:.04em}
+.ticks{display:flex;gap:6px}
+.ticks i{width:18px;height:2px;background:var(--stage-line);transition:background .3s}
+.ticks i.on{background:var(--stage-fg)}
+#stageName{color:var(--stage-fg)}
+.tag{margin-left:auto}
 
 .labels{position:absolute;inset:0;pointer-events:none;z-index:2}
-.lbl{position:absolute;left:0;top:0;font-family:var(--f-mono);font-size:11px;color:var(--stage-fg);white-space:nowrap;opacity:0;transform:translate(-50%,-50%)}
-.lbl.k{color:var(--teal)}
-.lbl.v{font-size:13px;font-weight:500}
+.lbl{position:absolute;left:0;top:0;font-size:12px;color:var(--stage-muted);white-space:nowrap;opacity:0;transform:translate(-50%,-50%);letter-spacing:.03em}
+.lbl.r{color:var(--red);font-weight:500}
 
-.caps{position:absolute;z-index:3;left:max(24px,env(safe-area-inset-left,0px));top:50%;transform:translateY(-50%);width:min(380px,34vw);height:60svh}
-.cap{position:absolute;left:0;right:0;top:50%;opacity:0;background:var(--glass);border:1px solid var(--glass-line);border-radius:10px;padding:20px 22px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);will-change:opacity,transform}
-.cap .k{font-family:var(--f-mono);font-size:12px;letter-spacing:.06em;color:var(--teal)}
-.cap h2{font-size:clamp(20px,2.2vw,26px);line-height:1.3;margin:6px 0 10px;text-wrap:balance}
-.cap p{margin:0 0 8px;color:#c5d2d8;font-size:15px}
+.caps{position:absolute;z-index:3;left:max(48px,env(safe-area-inset-left,0px));top:50%;transform:translateY(-50%);width:min(400px,34vw);height:64svh}
+.cap{position:absolute;left:0;right:0;top:50%;opacity:0;will-change:opacity,transform;border-left:1px solid var(--stage-line);padding-left:22px}
+.cap .k{font-size:12px;letter-spacing:.14em;color:var(--stage-muted);font-variant-numeric:tabular-nums}
+.cap h2{font-family:var(--f-serif);font-weight:700;font-size:clamp(23px,2.5vw,32px);line-height:1.3;margin:10px 0 14px;text-wrap:balance}
+.cap p{margin:0 0 10px;color:#c9c3b9;font-size:15.5px}
 .cap p:last-child{margin-bottom:0}
-.cap .num{font-family:var(--f-mono);color:var(--stage-fg)}
-.mini{display:grid;grid-template-columns:6.5em minmax(0,1fr) 3em;gap:8px;align-items:center;font-size:13px;margin-top:8px}
-.mini .lab{color:var(--stage-muted)} .mini .val{font-family:var(--f-mono);text-align:right}
-.mini .track{height:10px;background:#ffffff14;border-radius:3px;overflow:hidden}
-.mini .track i{display:block;height:100%;width:0;border-radius:3px}
+.cap b{color:var(--stage-fg);font-weight:500}
+.cap .num{color:var(--stage-fg);font-variant-numeric:tabular-nums;font-weight:500}
+.cap .bad{color:var(--red);font-weight:700;font-variant-numeric:tabular-nums}
+.cap .src{font-size:12px;color:var(--stage-muted);margin-top:14px}
+.mini{display:grid;grid-template-columns:5.5em minmax(0,1fr) 2.6em;gap:10px;align-items:center;font-size:13px;margin-top:10px}
+.mini .lab{color:var(--stage-muted)} .mini .val{text-align:right;font-variant-numeric:tabular-nums;color:var(--stage-fg)}
+.mini .track{height:6px;background:#ffffff12;overflow:hidden}
+.mini .track i{display:block;height:100%;width:0}
+
+/* scene 07 chart: missed pneumonia as bars, accuracy as a line above */
+.chart{position:absolute;z-index:2;right:max(48px,env(safe-area-inset-right,0px));top:50%;transform:translateY(-50%);width:min(560px,46vw);opacity:0;pointer-events:none}
+.chart svg{width:100%;height:auto;display:block;overflow:visible}
+.chart .ax{stroke:var(--stage-line)}
+.chart .t{fill:var(--stage-muted);font:12px var(--f-sans);letter-spacing:.02em}
+.chart .tv{fill:var(--stage-fg);font:500 13px var(--f-sans);font-variant-numeric:tabular-nums}
+.chart .tr{fill:var(--red);font:700 15px var(--f-sans);font-variant-numeric:tabular-nums}
+.chart .hd{fill:var(--stage-fg);font:500 13px var(--f-sans);letter-spacing:.06em}
+.chart .bar{fill:var(--red)}
+.chart .bar.dim{fill:#d9533c66}
+.chart .line{fill:none;stroke:var(--stage-fg);stroke-width:1.6}
+.chart .dot{fill:var(--stage);stroke:var(--stage-fg);stroke-width:1.6}
+.chart .hl{fill:#ffffff08}
+
+.loader{position:absolute;inset:0;z-index:4;display:grid;place-items:center;background:var(--stage);transition:opacity .8s ease, visibility .8s}
+.loader.done{opacity:0;visibility:hidden}
+.loader .box{display:grid;gap:12px;justify-items:center;font-size:12px;letter-spacing:.14em;color:var(--stage-muted)}
+.loader .ln{width:140px;height:1px;background:var(--stage-line);position:relative;overflow:hidden}
+.loader .ln::after{content:"";position:absolute;inset:0;width:40%;background:var(--stage-fg);animation:ld 1.4s ease-in-out infinite}
+@keyframes ld{0%{transform:translateX(-100%)}100%{transform:translateX(250%)}}
+@media (prefers-reduced-motion: reduce){.loader .ln::after{animation:none}}
 .nogl{position:absolute;inset:0;display:grid;place-items:center;color:var(--stage-muted);font-size:14px;padding:24px;text-align:center}
 
-footer{padding-block:40px 56px;border-top:1px solid var(--line)}
-footer h2{font-size:18px;margin:0 0 10px}
-footer p{color:var(--muted);font-size:14px;max-width:72ch}
+footer{padding-block:56px 72px;border-top:1px solid var(--line);display:grid;gap:4px}
+footer h2{font-family:var(--f-serif);font-size:20px;margin:0 0 10px}
+footer p{color:var(--muted);font-size:14px;max-width:72ch;margin:0 0 10px}
 footer a{color:var(--accent)}
-footer code{font-family:var(--f-mono);font-size:13px}
+footer code{font-size:13px}
 
 @media (max-width:760px){
-  .caps{left:max(12px,env(safe-area-inset-left,0px));right:max(12px,env(safe-area-inset-right,0px));width:auto;top:auto;bottom:calc(36px + env(safe-area-inset-bottom,0px));transform:none;height:36svh}
-  .cap{top:auto;bottom:0;padding:14px 16px}
-  .cap h2{font-size:19px;margin-bottom:6px}
+  .scrim{background:linear-gradient(0deg,#0c0b0af2 0%,#0c0b0ab0 34%,transparent 58%)}
+  .caps{left:max(20px,env(safe-area-inset-left,0px));right:max(20px,env(safe-area-inset-right,0px));width:auto;top:auto;bottom:calc(52px + env(safe-area-inset-bottom,0px));transform:none;height:40svh}
+  .cap{top:auto;bottom:0;padding-left:14px}
+  .cap h2{font-size:21px;margin:6px 0 8px}
   .cap p{font-size:14px}
+  .chart{left:max(20px,env(safe-area-inset-left,0px));right:max(20px,env(safe-area-inset-right,0px));width:auto;top:9%;transform:none}
+  .tag{display:none}
 }
 </style>
 
 <div class="wrap">
   <header class="intro">
-    <div class="eyebrow">B1 · 흉부 X-ray · Grad-CAM</div>
+    <div class="eyebrow">소아 흉부 X-ray · ResNet18 · Grad-CAM</div>
     <h1>AI는 폐렴을 어떻게 보나, 그리고 어떻게 속았나</h1>
-    <p class="lede">아래로 스크롤하면 X-ray 한 장이 3만 개의 빛 점으로 흩어지고, 모델이 그 안의 어디를 근거로 삼는지가 산처럼 솟아오릅니다. 그리고 그 산이 엉뚱한 곳에 솟았던 순간까지.</p>
-    <div class="demo-note"><b>데모</b> 흉부 그림은 코드로 그린 합성 이미지이고, 열지도는 실제 결과를 흉내 낸 배치입니다.</div>
+    <p class="lede">폐렴 분류 모델이 X-ray의 어디를 보고 판단하는지 따라가 봅니다. 그리고 점수는 올랐는데 사실은 엉뚱한 곳을 보고 있던 순간까지.</p>
+    <p class="demo-note" id="dataNote"><b>실험 기록</b> Kermany 공개 데이터로 다시 학습한 ResNet18의 실제 Grad-CAM입니다. 진단 목적이 아닙니다.</p>
   </header>
 </div>
 
 <section class="scrolly" id="scrolly" aria-label="스크롤 설명">
   <div class="stage">
-    <canvas id="gl" role="img" aria-label="점으로 표현한 합성 흉부 X-ray와 Grad-CAM 3D 열지도"></canvas>
-    <div class="vignette" aria-hidden="true"></div>
+    <canvas id="gl" role="img" aria-label="점으로 표현한 흉부 X-ray와 Grad-CAM 3D 열지도"></canvas>
+    <div class="scrim" aria-hidden="true"></div>
+    <div class="loader" id="loader" role="status"><div class="box"><span>X-RAY 불러오는 중</span><div class="ln"></div></div></div>
     <div class="labels" id="labels" aria-hidden="true"></div>
-    <div class="hud" aria-hidden="true"><span id="stageName">도입</span><div class="bar"><i id="prog"></i></div><span id="pval">p 0.00</span></div>
-    <div class="tag">합성 이미지 · 실제 환자 아님</div>
+    <div class="hud" aria-hidden="true"><div class="ticks" id="ticks"></div><span id="stageName">도입</span><span class="tag" id="tag">Kermany et al. 2018 · CC BY 4.0</span></div>
+    <div class="chart" id="chart" aria-label="세 시험 조건의 놓친 폐렴 수와 정확도"></div>
 
     <div class="caps" id="caps">
-      <div class="cap" data-a="-0.02" data-b="0.11"><div class="k">01 · 도입</div><h2>X-ray 한 장, 3만 개의 점</h2><p>소아 흉부 X-ray를 점 하나하나로 펼쳤습니다. 밝은 점은 뼈와 심장, 어두운 빈 곳은 공기가 찬 폐입니다.</p><p>모델은 이 사진만 보고 정상인지 폐렴인지 맞혀야 합니다.</p></div>
-      <div class="cap" data-a="0.12" data-b="0.25"><div class="k">02 · 정상과 폐렴</div><h2>스캔이 지나가면 폐가 흐려진다</h2><p>폐에 염증이 차면 X선이 덜 통과해서, 검어야 할 폐 일부가 <b>흐린 구름</b>처럼 보입니다.</p><p>빛줄기가 내려가며 정상 사진을 폐렴 사진으로 바꿉니다.</p></div>
-      <div class="cap" data-a="0.26" data-b="0.41"><div class="k">03 · 모델 속으로</div><h2>사진은 층을 지나며 작아진다</h2><p>ResNet18은 사진을 <span class="num">224 → 112 → 56 → 28 → 14 → 7</span> 칸으로 점점 압축합니다.</p><p>마지막 <span class="num">7 × 7</span> 칸 각각이 "폐렴" 판단에 얼마나 기여했는지 계산한 것이 Grad-CAM입니다. 기둥이 높을수록 기여가 큽니다.</p></div>
-      <div class="cap" data-a="0.42" data-b="0.55"><div class="k">04 · 제대로 볼 때</div><h2>근거가 폐 위에 솟는다</h2><p>7×7 지도를 원래 크기로 늘려 사진 위에 올리면, 폐 아래쪽 흐린 영역에 붉은 산이 솟습니다.</p><p>의사가 보는 곳과 비슷한, 바람직한 근거입니다.</p></div>
-      <div class="cap" data-a="0.56" data-b="0.71"><div class="k">05 · 반전</div><h2>검은 여백이 붙자, 산이 모서리로</h2><p>학습 사진에는 검은 패딩이 있었고 시험 사진에는 없었습니다. 모델은 폐 대신 <b>가장자리</b>로 맞히는 법을 배웠습니다.</p>
-        <div class="mini"><span class="lab">오진한 정상</span><div class="track"><i id="b1" style="background:var(--red)"></i></div><span class="val">0.68</span></div>
-        <div class="mini"><span class="lab">맞힌 정상</span><div class="track"><i id="b2" style="background:var(--ok)"></i></div><span class="val">0.21</span></div>
-        <p style="font-size:12px;color:var(--stage-muted);margin-top:8px">열지도 중 바깥 띠가 차지하는 비율 (DACON 보고서)</p></div>
-      <div class="cap" data-a="0.72" data-b="0.86"><div class="k">06 · 해결 과정</div><h2>지름길을 하나씩 지웠다</h2><p>단순 CNN <span class="num">0.7468</span> → ResNet18 분류층만 <span class="num">0.8333</span> → 전체 미세조정 <span class="num">0.9407</span>.</p><p>검증 점수가 올라도 리더보드가 떨어진 실험이 있어, 매번 Grad-CAM으로 근거를 다시 확인했습니다.</p></div>
-      <div class="cap" data-a="0.87" data-b="1.02"><div class="k">07 · 정리</div><h2>정확도보다 근거를 본다</h2><p>높은 점수가 곧 올바른 판단은 아닙니다. 의료 AI는 무엇을 보고 맞혔는지까지 확인해야 합니다.</p><p>교육용 시연이며 진단 목적이 아닙니다.</p></div>
+      <div class="cap" data-a="-0.02" data-b="0.11"><div class="k">01 / 08</div><h2>X-ray는 몸의 그림자다</h2><p>갈비뼈, 기관지, 심장은 입체로 겹겹이 놓여 있습니다. 앞에서 X선을 비추면 이 모든 것이 <b>한 장의 흑백 그림자</b>로 납작하게 겹칩니다.</p><p>모델이 보는 건 이 그림자 한 장뿐입니다. 이걸로 정상인지 폐렴인지 맞혀야 합니다.</p></div>
+      <div class="cap" data-a="0.12" data-b="0.24"><div class="k">02 / 08</div><h2>빛줄기가 지나가면 폐가 흐려진다</h2><p>정상 아이의 사진이 폐렴 아이의 사진으로 바뀝니다 (서로 다른 두 아이).</p><p>폐에 염증이 차면 X선이 덜 통과해서, 검어야 할 폐 일부가 <b>흐린 구름</b>처럼 보입니다.</p></div>
+      <div class="cap" data-a="0.25" data-b="0.40"><div class="k">03 / 08</div><h2>사진은 층을 지나며 작아진다</h2><p>ResNet18은 사진을 <span class="num">224 → 112 → 56 → 28 → 14 → 7</span> 칸으로 점점 압축합니다.</p><p>마지막 <span class="num">7 × 7</span> 칸 각각이 "폐렴" 판단에 얼마나 기여했는지 계산한 것이 Grad-CAM입니다. 기둥이 높을수록 기여가 큽니다.</p></div>
+      <div class="cap" data-a="0.41" data-b="0.53"><div class="k">04 / 08</div><h2>근거가 폐 위에 솟는다</h2><p>검은 여백 없이 학습한 모델(clean)은 이 사진을 폐렴 <span class="num" id="goodProb">99.9%</span>로 판단했습니다.</p><p>7×7 지도를 사진 위에 올리면, 붉은 산이 아래쪽 폐에 솟습니다. 7×7 칸이라 정확한 병변보다 "대략 이 구역"을 가리킵니다.</p></div>
+      <div class="cap" data-a="0.54" data-b="0.65"><div class="k">05 / 08</div><h2>학습 사진에는 검은 띠가 있었다</h2><p>사진을 정사각형으로 맞추느라 위아래에 검은 띠를 붙였습니다. 그런데 폐렴 사진은 가로로 더 길어서 띠가 <b>거의 2배</b> 두꺼웠습니다.</p>
+        <div class="mini"><span class="lab">정상 사진</span><div class="track"><i id="b1" style="background:var(--stage-fg)"></i></div><span class="val">0.18</span></div>
+        <div class="mini"><span class="lab">폐렴 사진</span><div class="track"><i id="b2" style="background:var(--red)"></i></div><span class="val">0.32</span></div>
+        <p class="src">학습 사진 평균 여백 비율. 띠 두께만 봐도 정답을 짐작할 수 있다는 뜻입니다.</p></div>
+      <div class="cap" data-a="0.66" data-b="0.77"><div class="k">06 / 08</div><h2>띠에 기대던 모델은 엉뚱한 곳을 본다</h2><p>띠를 붙여 학습한 모델(padded)은 이 <b>정상</b> 아이를 폐렴 <span class="bad" id="trickProb">70%</span>로 판단했습니다.</p><p>근거는 폐가 아니라 오른쪽 모서리, 촬영 장비가 찍어 넣은 <b>글자</b> 쪽에 솟았습니다.</p></div>
+      <div class="cap" data-a="0.78" data-b="0.895"><div class="k">07 / 08</div><h2>정확도는 올랐는데, 더 위험해졌다</h2><p>같은 padded 모델에서 시험 사진의 띠만 뺐더니 정확도는 <span class="num" id="accA">0.8622</span> → <span class="num" id="accB">0.9247</span>로 올랐습니다.</p><p>하지만 놓친 폐렴(FN)은 <span class="bad" id="fnA">3</span>명 → <span class="bad" id="fnB">24</span>명. 의료에서 가장 위험한 실수입니다.</p><p class="src">Kermany test 624장 재실험</p></div>
+      <div class="cap" data-a="0.9" data-b="1.02"><div class="k">08 / 08</div><h2>정확도보다 근거를 본다</h2><p>DACON 과제에서 처음 발견한 "검은 띠 지름길"을 공개 원본 데이터로 다시 확인했습니다.</p><p>높은 점수가 곧 올바른 판단은 아닙니다. 의료 AI는 무엇을 보고 맞혔는지까지 확인해야 합니다.</p><p class="src">교육용 시연이며 진단 목적이 아닙니다.</p></div>
     </div>
   </div>
 </section>
 
 <div class="wrap">
   <footer>
-    <h2>이 데모에 대해</h2>
-    <p>Three.js로 X-ray의 밝기를 점 구름(약 3만 개)으로 만들고, 스크롤 진행률 <code>p</code>(0–1) 하나로 카메라 경로, 스캔 빛줄기, 층 펼침, 열지도 높이, 여백을 모두 제어합니다. NeuroLightbox에서 분석한 sticky 고정 + <code>data-a/b</code> 자막 + smoothstep 구조 그대로입니다.</p>
-    <p>실제 버전에서는 Kermany 소아 흉부 X-ray(CC BY 4.0)와 Colab에서 다시 학습한 ResNet18의 Grad-CAM 결과로 바꿉니다. 수치 출처: <a href="https://github.com/ten-infosec/dacon-chest-xray-pneumonia" target="_blank" rel="noopener">DACON 흉부 X-ray 과제 보고서</a>.</p>
+    <h2>이 페이지에 대해</h2>
+    <p>Three.js로 X-ray의 밝기를 점 구름(180×180)으로 만들고, 스크롤 진행률 <code>p</code>(0–1) 하나로 카메라 경로, 스캔 빛줄기, 층 펼침, Grad-CAM 높이, 검은 띠를 모두 제어합니다.</p>
+    <p>모델: ImageNet 사전학습 ResNet18 전체 미세조정, 224×224, 5 에폭, 환자 단위 80/20 분할. 수치는 모두 Kermany test 624장 재실험 결과이며, DACON 과제 결과는 <a href="https://github.com/ten-infosec/dacon-chest-xray-pneumonia" target="_blank" rel="noopener">별도 저장소</a>에 있습니다. 코드: <a href="https://github.com/ten-infosec/xray-gradcam-story" target="_blank" rel="noopener">xray-gradcam-story</a>.</p>
+    <p>3D 흉곽 모델: BodyParts3D, © The Database Center for Life Science, licensed under CC Attribution-Share Alike 2.1 Japan (성인 모델을 단순화해 사용, 연출용).</p>
+    <p>데이터: Kermany, D., Zhang, K., Goldbaum, M. (2018). Labeled Optical Coherence Tomography (OCT) and Chest X-Ray Images for Classification. Mendeley Data, V2. doi:10.17632/rscbjbr9sj.2 (CC BY 4.0).</p>
   </footer>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 <script>
-(() => {
+(async () => {
   const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
   const sm = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
   const lerp = (a, b, t) => a + (b - a) * t;
@@ -115,122 +155,180 @@ footer code{font-family:var(--f-mono);font-size:13px}
   let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
   const mk = (n = S) => { const c = document.createElement('canvas'); c.width = c.height = n; return c; };
 
-  /* ---------- synthetic chest film (2D canvas, later sampled by the GPU) ---------- */
+  /* ---------- fallback: synthetic film, used only if data/story.json is missing ---------- */
   function drawChest(pneumonia) {
     const c = mk(), g = c.getContext('2d');
-    g.fillStyle = '#000'; g.fillRect(0, 0, S, S);
-    g.filter = 'blur(6px)';
+    g.fillStyle = '#000'; g.fillRect(0, 0, S, S); g.filter = 'blur(6px)';
     let gr = g.createRadialGradient(256, 300, 60, 256, 300, 260);
     gr.addColorStop(0, '#8a8a8a'); gr.addColorStop(1, '#202020');
     g.fillStyle = gr; g.beginPath(); g.ellipse(256, 310, 220, 250, 0, 0, Math.PI * 2); g.fill();
-    [[176, 270], [336, 270]].forEach(([x, y], i) => {
-      const l = g.createRadialGradient(x, y, 10, x, y, 120);
-      l.addColorStop(0, '#0c0c0c'); l.addColorStop(1, '#303030');
-      g.fillStyle = l; g.beginPath(); g.ellipse(x, y, i ? 82 : 88, 150, i ? 0.08 : -0.08, 0, Math.PI * 2); g.fill();
-    });
+    [[176, 270], [336, 270]].forEach(([x, y], i) => { const l = g.createRadialGradient(x, y, 10, x, y, 120); l.addColorStop(0, '#0c0c0c'); l.addColorStop(1, '#303030'); g.fillStyle = l; g.beginPath(); g.ellipse(x, y, i ? 82 : 88, 150, i ? 0.08 : -0.08, 0, Math.PI * 2); g.fill(); });
     g.fillStyle = '#b0b0b0'; g.fillRect(238, 120, 36, 300);
-    gr = g.createRadialGradient(300, 330, 10, 300, 330, 90);
-    gr.addColorStop(0, '#c0c0c0'); gr.addColorStop(1, '#6a6a6a00');
-    g.fillStyle = gr; g.beginPath(); g.ellipse(292, 330, 78, 64, -0.3, 0, Math.PI * 2); g.fill();
-    g.fillStyle = '#909090';
-    g.beginPath(); g.ellipse(176, 440, 100, 36, 0, Math.PI, 0); g.lineTo(276, 512); g.lineTo(76, 512); g.fill();
-    g.beginPath(); g.ellipse(336, 448, 96, 32, 0, Math.PI, 0); g.lineTo(432, 512); g.lineTo(240, 512); g.fill();
-    if (pneumonia) for (let k = 0; k < 10; k++) {
-      const x = 150 + rnd() * 60, y = 300 + rnd() * 90, r = 26 + rnd() * 30;
-      const p = g.createRadialGradient(x, y, 2, x, y, r);
-      p.addColorStop(0, 'rgba(210,210,210,.6)'); p.addColorStop(1, 'rgba(210,210,210,0)');
-      g.fillStyle = p; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
-    }
-    g.filter = 'none';
-    g.strokeStyle = 'rgba(230,230,230,.3)'; g.lineWidth = 7;
-    for (let i = 0; i < 8; i++) {
-      const y = 170 + i * 34;
-      g.beginPath(); g.ellipse(176, y, 96, 26, 0.18, Math.PI * 1.05, Math.PI * 1.95); g.stroke();
-      g.beginPath(); g.ellipse(336, y, 96, 26, -0.18, Math.PI * 1.05, Math.PI * 1.95); g.stroke();
-    }
-    g.lineWidth = 9; g.strokeStyle = 'rgba(240,240,240,.4)';
-    g.beginPath(); g.moveTo(100, 140); g.quadraticCurveTo(180, 120, 244, 150); g.stroke();
-    g.beginPath(); g.moveTo(412, 140); g.quadraticCurveTo(332, 120, 268, 150); g.stroke();
+    if (pneumonia) for (let k = 0; k < 10; k++) { const x = 150 + rnd() * 60, y = 300 + rnd() * 90, r = 26 + rnd() * 30; const p = g.createRadialGradient(x, y, 2, x, y, r); p.addColorStop(0, 'rgba(210,210,210,.6)'); p.addColorStop(1, 'rgba(210,210,210,0)'); g.fillStyle = p; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill(); }
+    g.filter = 'none'; g.strokeStyle = 'rgba(230,230,230,.3)'; g.lineWidth = 7;
+    for (let i = 0; i < 8; i++) { const y = 170 + i * 34; g.beginPath(); g.ellipse(176, y, 96, 26, 0.18, Math.PI * 1.05, Math.PI * 1.95); g.stroke(); g.beginPath(); g.ellipse(336, y, 96, 26, -0.18, Math.PI * 1.05, Math.PI * 1.95); g.stroke(); }
     return c;
   }
+  function padCanvas(src, fx, fy) { const c = mk(), g = c.getContext('2d'); g.fillStyle = '#000'; g.fillRect(0, 0, S, S); const w = S * fx, h = S * fy; g.drawImage(src, (S - w) / 2, (S - h) / 2, w, h); return c; }
+  const blobGrid = bl => Array.from({ length: 7 }, (_, y) => Array.from({ length: 7 }, (_, x) => { let s = 0; for (const [bx, by, r, w] of bl) { const dx = (x + .5) / 7 - bx, dy = (y + .5) / 7 - by; s += w * Math.exp(-(dx * dx + dy * dy) / (2 * r * r)); } return clamp(s, 0, 1); }));
 
-  // heat blobs in film coordinates (u right, v down), value 0..1
-  const LUNG = [[0.35, 0.67, 0.09, 1], [0.30, 0.58, 0.06, 0.6]];
-  const EDGE = [[0.06, 0.08, 0.08, 0.95], [0.94, 0.06, 0.07, 0.85], [0.06, 0.92, 0.07, 0.8], [0.95, 0.9, 0.08, 0.9], [0.5, 0.03, 0.06, 0.45], [0.03, 0.5, 0.05, 0.4]];
-  const blobVal = (bl, u, v) => { let s = 0; for (const [x, y, r, w] of bl) { const dx = u - x, dy = v - y; s += w * Math.exp(-(dx * dx + dy * dy) / (2 * r * r)); } return clamp(s, 0, 1); };
-  function heatGray(bl) {
-    const n = 96, c = mk(n), g = c.getContext('2d'), d = g.createImageData(n, n);
-    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { const v = Math.round(255 * blobVal(bl, x / n, y / n)), o = (y * n + x) * 4; d.data[o] = d.data[o + 1] = d.data[o + 2] = v; d.data[o + 3] = 255; }
-    g.putImageData(d, 0, 0); return c;
+  /* ---------- load real experiment output ---------- */
+  const loadImg = src => new Promise((res, rej) => { const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = src; });
+  const toCanvas = im => { const n = Math.min(2048, Math.max(S, im.naturalWidth)), c = mk(n), g = c.getContext('2d'); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high'; g.drawImage(im, 0, 0, n, n); return autoLevel(c); };
+  // stretch the gray levels so the 1st..99.5th percentile spans black..white (X-rays are often flat and dim)
+  function autoLevel(c) {
+    const g = c.getContext('2d'), img = g.getImageData(0, 0, c.width, c.height), d = img.data, hist = new Uint32Array(256);
+    let n = 0; for (let i = 0; i < d.length; i += 4) if (d[i] > 6) { hist[d[i]]++; n++; }
+    if (!n) return c;
+    const q = f => { let a = 0; for (let v = 0; v < 256; v++) { a += hist[v]; if (a >= n * f) return v; } return 255; };
+    const lo = q(0.005), hi = Math.max(lo + 1, q(0.9995));
+    for (let i = 0; i < d.length; i += 4) { const v = d[i] <= 6 ? 0 : clamp((d[i] - lo) / (hi - lo), 0, 1) * 255; d[i] = d[i + 1] = d[i + 2] = v; }
+    g.putImageData(img, 0, 0); return c;
   }
-  function featureMap(src, n, label) {
-    // feature-map look: the film averaged down to n×n cells, tinted teal, with a cell grid
+  const src64 = (e, k) => e[k + '_hd'] ? 'data:image/jpeg;base64,' + e[k + '_hd'] : 'data:image/png;base64,' + e[k];
+  let D = null;
+  try {
+    const r = await fetch('data/story.json', { cache: 'no-cache' });
+    if (r.ok) {
+      const s = await r.json();
+      const [gp, gpp, tn, tnp] = await Promise.all([src64(s.good, 'image_plain'), src64(s.good, 'image_padded'), src64(s.trick, 'image_plain'), src64(s.trick, 'image_padded')].map(loadImg));
+      let hero = null; try { hero = await loadImg('data/hero.jpg'); } catch (e) { hero = null; }
+      D = { s, filmP: toCanvas(gp), filmPP: toCanvas(gpp), filmN: hero ? toCanvas(hero) : toCanvas(tn), heroAsp: hero ? hero.naturalWidth / hero.naturalHeight : 0, filmT: toCanvas(tn), rawPP: gpp, rawNP: tnp, camGood: s.good.cam7, camTrick: s.trick.cam7 };
+    }
+  } catch (e) { D = null; }
+  if (!D) {
+    const fP = drawChest(true);
+    D = { s: null, filmP: fP, filmPP: padCanvas(fP, 1, 0.66), filmN: drawChest(false),
+      camGood: blobGrid([[0.35, 0.67, 0.12, 1]]), camTrick: blobGrid([[0.94, 0.06, 0.1, 0.9], [0.95, 0.9, 0.1, 1]]) };
+    $('tag').textContent = '합성 이미지 · 실제 환자 아님';
+    $('dataNote').innerHTML = '<b>데모</b> 실험 데이터를 불러오지 못해 합성 이미지로 표시합니다.';
+  } else {
+    const ev = Object.fromEntries(D.s.eval.map(e => [e.setting, e]));
+    const pct = v => v >= 0.999 ? '99.9% 이상' : (v * 100 >= 99 ? (v * 100).toFixed(1) : Math.round(v * 100)) + '%';
+    $('goodProb').textContent = pct(D.s.good.prob_pneumonia);
+    $('trickProb').textContent = pct(D.s.trick.prob_pneumonia);
+    const a = ev['padded / padded test'], b = ev['padded / plain test'];
+    if (a && b) { $('accA').textContent = a.acc.toFixed(4); $('accB').textContent = b.acc.toFixed(4); $('fnA').textContent = a.FN; $('fnB').textContent = b.FN; }
+  }
+
+  // where the content sits inside the padded image (to outline the black bars)
+  // measured on the untouched padded image: a padding row/column is pure black end to end,
+  // while even the darkest row of a real X-ray has some non-black pixels
+  function contentBox(src) {
+    const n = 256, c = mk(n), g = c.getContext('2d'); g.drawImage(src, 0, 0, n, n);
+    const d = g.getImageData(0, 0, n, n).data;
+    const rowMax = new Uint8Array(n), colMax = new Uint8Array(n);
+    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) { const v = d[(y * n + x) * 4]; if (v > rowMax[y]) rowMax[y] = v; if (v > colMax[x]) colMax[x] = v; }
+    const span = m => { let a = 0, b = n - 1; while (a < n && m[a] <= 4) a++; while (b > a && m[b] <= 4) b--; return (b - a + 1) / n; };
+    return [span(colMax), span(rowMax)];
+  }
+  const [boxW, boxH] = D.rawPP ? contentBox(D.rawPP) : [1, 0.66];
+  // true width/height of each film (the model saw them squeezed to a square; we show them at real proportions)
+  const aspP = boxW / boxH, aspT = D.rawNP ? (b => b[0] / b[1])(contentBox(D.rawNP)) : 1.37, aspN = D.heroAsp || aspT;
+  if (!D.filmT) D.filmT = D.filmN;
+  const fit = a => a >= 1 ? [1, 1 / a] : [a, 1];
+
+  function camCanvas(cam) { const c = mk(7), g = c.getContext('2d'), d = g.createImageData(7, 7); for (let y = 0; y < 7; y++) for (let x = 0; x < 7; x++) { const v = Math.round(255 * clamp(cam[y][x], 0, 1)), o = (y * 7 + x) * 4; d.data[o] = d.data[o + 1] = d.data[o + 2] = v; d.data[o + 3] = 255; } g.putImageData(d, 0, 0); return c; }
+  function featureMap(src, n) {
     const small = mk(n), sg = small.getContext('2d'); sg.drawImage(src, 0, 0, n, n);
-    const c = mk(256), g = c.getContext('2d'); g.imageSmoothingEnabled = false;
-    g.drawImage(small, 0, 0, 256, 256);
-    g.globalCompositeOperation = 'multiply'; g.fillStyle = '#4cc0cc'; g.fillRect(0, 0, 256, 256);
-    g.globalCompositeOperation = 'source-over';
-    if (n <= 56) { g.strokeStyle = 'rgba(76,192,204,.35)'; g.lineWidth = 1; for (let i = 0; i <= n; i++) { const q = i * 256 / n; g.beginPath(); g.moveTo(q, 0); g.lineTo(q, 256); g.moveTo(0, q); g.lineTo(256, q); g.stroke(); } }
-    g.strokeStyle = 'rgba(76,192,204,.9)'; g.lineWidth = 3; g.strokeRect(1.5, 1.5, 253, 253);
-    return c;
+    const c = mk(256), g = c.getContext('2d'); g.imageSmoothingEnabled = false; g.drawImage(small, 0, 0, 256, 256);
+    g.globalCompositeOperation = 'multiply'; g.fillStyle = '#cfc8bc'; g.fillRect(0, 0, 256, 256); g.globalCompositeOperation = 'source-over';
+    if (n <= 56) { g.strokeStyle = 'rgba(236,232,225,.22)'; g.lineWidth = 1; for (let i = 0; i <= n; i++) { const q = i * 256 / n; g.beginPath(); g.moveTo(q, 0); g.lineTo(q, 256); g.moveTo(0, q); g.lineTo(256, q); g.stroke(); } }
+    g.strokeStyle = 'rgba(236,232,225,.7)'; g.lineWidth = 3; g.strokeRect(1.5, 1.5, 253, 253); return c;
   }
 
-  const filmN = drawChest(false), filmP = drawChest(true);
-
-  /* ---------- three.js setup ---------- */
+  /* ---------- three.js ---------- */
   const canvas = $('gl');
   let renderer;
   try { renderer = new THREE.WebGLRenderer({ canvas, antialias: true }); }
   catch (e) { canvas.insertAdjacentHTML('afterend', '<div class="nogl">이 브라우저에서는 WebGL을 쓸 수 없어 3D 장면을 표시하지 못했습니다.</div>'); }
-  if (!renderer) return;
-  renderer.setClearColor(0x081115, 1);
+  if (!renderer) { $('loader').classList.add('done'); return; }
+  renderer.setClearColor(0x0c0b0a, 1);
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(40, 1, 0.05, 50);
+  let composer = null, bloom = null, finish = null;
+  try {
+    if (THREE.EffectComposer && THREE.UnrealBloomPass) {
+      composer = new THREE.EffectComposer(renderer);
+      composer.addPass(new THREE.RenderPass(scene, camera));
+      // bloom only catches the brightest parts: the scan beam, heat peaks, bone highlights
+      bloom = new THREE.UnrealBloomPass(new THREE.Vector2(256, 256), 0.22, 0.45, 0.97);
+      composer.addPass(bloom);
+      finish = new THREE.ShaderPass({
+        uniforms: { tDiffuse: { value: null }, uTime: { value: 0 }, uRes: { value: new THREE.Vector2(1, 1) } },
+        vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }',
+        fragmentShader: `
+          uniform sampler2D tDiffuse; uniform float uTime; uniform vec2 uRes; varying vec2 vUv;
+          float hash(vec2 p){ return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
+          void main(){
+            vec2 d = vUv - .5; float r2 = dot(d, d);
+            // faint lens fringe toward the edges, like an old light box loupe
+            vec2 o = d * r2 * .012;
+            vec3 c = vec3(texture2D(tDiffuse, vUv + o).r, texture2D(tDiffuse, vUv).g, texture2D(tDiffuse, vUv - o).b);
+            c *= 1. - smoothstep(.18, .75, r2) * .45;
+            float g = hash(floor(vUv * uRes) + fract(uTime * 7.3)) - .5;
+            c += g * .035;
+            gl_FragColor = vec4(c, 1.);
+          }`
+      });
+      composer.addPass(finish);
+    }
+  } catch (e) { composer = null; }
+  const tex = c => { const t = new THREE.CanvasTexture(c); t.minFilter = THREE.LinearFilter; t.magFilter = THREE.LinearFilter; t.generateMipmaps = false; return t; };
 
-  const tex = c => { const t = new THREE.CanvasTexture(c); t.minFilter = THREE.LinearFilter; t.generateMipmaps = false; return t; };
   const U = {
-    tN: { value: tex(filmN) }, tP: { value: tex(filmP) }, tHL: { value: tex(heatGray(LUNG)) }, tHE: { value: tex(heatGray(EDGE)) },
-    uScan: { value: -1 }, uMixOn: { value: 0 }, uPad: { value: 0 }, uHL: { value: 0 }, uHE: { value: 0 }, uLift: { value: 0.6 },
-    uRelief: { value: 0.12 }, uSize: { value: 12 }, uDim: { value: 0 }, uTime: { value: 0 }, uScatter: { value: 0 }, uBeam: { value: 0 }
+    tN: { value: tex(D.filmN) }, tT: { value: tex(D.filmT) }, tP: { value: tex(D.filmP) }, tPP: { value: tex(D.filmPP) },
+    tHL: { value: tex(camCanvas(D.camGood)) }, tHE: { value: tex(camCanvas(D.camTrick)) },
+    uBox: { value: new THREE.Vector2(boxW, boxH) }, uScan: { value: -1 }, uMixOn: { value: 0 }, uToN: { value: 0 }, uPad: { value: 0 }, uHL: { value: 0 }, uHE: { value: 0 }, uLift: { value: 0.6 },
+    uRelief: { value: 0.08 }, uSize: { value: 12 }, uDim: { value: 0 }, uTime: { value: 0 }, uScatter: { value: 0 }, uBeam: { value: 0 }, uPts: { value: 1 }, uSurf: { value: 0 }
   };
 
-  // point grid: one point per film sample
   const N = 180, pos = new Float32Array(N * N * 3), uv = new Float32Array(N * N * 2), rn = new Float32Array(N * N);
   for (let j = 0, k = 0; j < N; j++) for (let i = 0; i < N; i++, k++) {
-    pos[k * 3] = (i / (N - 1) - 0.5) * 2; pos[k * 3 + 1] = (j / (N - 1) - 0.5) * 2; pos[k * 3 + 2] = 0;
+    pos[k * 3] = (i / (N - 1) - 0.5) * 2; pos[k * 3 + 1] = (j / (N - 1) - 0.5) * 2;
     uv[k * 2] = i / (N - 1); uv[k * 2 + 1] = j / (N - 1); rn[k] = Math.random();
   }
   const pg = new THREE.BufferGeometry();
   pg.setAttribute('position', new THREE.BufferAttribute(pos, 3));
   pg.setAttribute('aUv', new THREE.BufferAttribute(uv, 2));
   pg.setAttribute('aRnd', new THREE.BufferAttribute(rn, 1));
+  // GLSL shared by the point cloud and the solid film surface
+  const COMMON = `
+    uniform sampler2D tN,tT,tP,tPP,tHL,tHE;
+    uniform vec2 uBox;
+    uniform float uScan,uMixOn,uToN,uPad,uHL,uHE,uLift,uRelief,uSize,uDim,uTime,uScatter,uBeam,uPts,uSurf;
+    vec3 reds(float t){ t=clamp(t,0.,1.);
+      vec3 a=vec3(.996,.878,.824), b=vec3(.988,.573,.447), c=vec3(.871,.176,.149), d=vec3(.55,.02,.06);
+      return t<.33 ? mix(a,b,t/.33) : (t<.66 ? mix(b,c,(t-.33)/.33) : mix(c,d,(t-.66)/.34)); }
+    float lumAt(vec2 uv){
+      float down = 1.-uv.y;
+      float m = uMixOn * (1.-smoothstep(uScan-.02, uScan+.02, down));
+      // padding: the same film shrinks into its box inside a square, and black fills the rest
+      vec2 cu = (uv - .5) / mix(vec2(1.), uBox, uPad) + .5;
+      float inside = step(0., cu.x) * step(cu.x, 1.) * step(0., cu.y) * step(cu.y, 1.);
+      float l = mix(texture2D(tN,cu).r, texture2D(tP,cu).r, m) * inside;
+      return mix(l, texture2D(tT,uv).r, uToN);
+    }
+    float heatAt(vec2 uv){
+      float e = smoothstep(0., .07, min(min(uv.x, 1. - uv.x), min(uv.y, 1. - uv.y)));
+      return e * max(smoothstep(.35,1.,texture2D(tHL,uv).r)*uHL, smoothstep(.15,1.,texture2D(tHE,uv).r)*uHE);
+    }
+    float beamAt(vec2 uv){ return uBeam * exp(-pow(((1.-uv.y)-uScan)*38.,2.)); }
+  `;
   const pm = new THREE.ShaderMaterial({
     uniforms: U, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
-    vertexShader: `
+    vertexShader: COMMON + `
       attribute vec2 aUv; attribute float aRnd;
-      uniform sampler2D tN,tP,tHL,tHE;
-      uniform float uScan,uMixOn,uPad,uHL,uHE,uLift,uRelief,uSize,uDim,uTime,uScatter,uBeam;
       varying vec3 vCol;
-      vec3 reds(float t){ t=clamp(t,0.,1.);
-        vec3 a=vec3(.996,.878,.824), b=vec3(.988,.573,.447), c=vec3(.871,.176,.149), d=vec3(.55,.02,.06);
-        return t<.33 ? mix(a,b,t/.33) : (t<.66 ? mix(b,c,(t-.33)/.33) : mix(c,d,(t-.66)/.34)); }
       void main(){
-        vec2 sc = mix(vec2(1.), vec2(.66,.84), uPad);
-        vec2 cu = (aUv-.5)/sc+.5;
-        float inside = step(0.,cu.x)*step(cu.x,1.)*step(0.,cu.y)*step(cu.y,1.);
-        float down = 1.-aUv.y;
-        float m = uMixOn * (1.-smoothstep(uScan-.02, uScan+.02, down));
-        float lum = mix(texture2D(tN,cu).r, texture2D(tP,cu).r, m) * inside;
-        float h = max(texture2D(tHL,aUv).r*uHL, texture2D(tHE,aUv).r*uHE);
-        float beam = uBeam * exp(-pow((down-uScan)*38.,2.));
+        float lum = lumAt(aUv), h = heatAt(aUv), beam = beamAt(aUv);
         vec3 p = position;
         p.z = lum*uRelief + h*uLift + beam*.06;
         p += uScatter * vec3(sin(aRnd*40.+uTime*.4), cos(aRnd*57.+uTime*.3), sin(aRnd*91.)) * (.25+aRnd*.5);
-        vec3 col = vec3(lum) * vec3(.82,.94,1.) * .8;
-        col = mix(col, reds(h)*1.1, smoothstep(.04,.45,h));
-        col += vec3(.3,.85,.95) * beam;
-        col *= 1. - uDim;
-        vCol = col;
+        vec3 col = vec3(pow(lum,1.2)) * vec3(.95,.93,.89) * .85;
+        col = mix(col, reds(h)*1.1, smoothstep(.06,.5,h));
+        col += vec3(1.,.97,.9) * beam * .8;
+        vCol = col * (1. - uDim) * uPts;
         vec4 mv = modelViewMatrix * vec4(p,1.);
         gl_PointSize = uSize * (1. + h*1.4) / -mv.z;
         gl_Position = projectionMatrix * mv;
@@ -239,27 +337,81 @@ footer code{font-family:var(--f-mono);font-size:13px}
       varying vec3 vCol;
       void main(){ float d = length(gl_PointCoord-.5); float a = 1.-smoothstep(.1,.5,d); gl_FragColor = vec4(vCol*a,1.); }`
   });
-  scene.add(new THREE.Points(pg, pm));
+  const points = new THREE.Points(pg, pm);
+  points.renderOrder = 2;
+  scene.add(points);
 
-  // frames: the full 224 square and the padded content box
+  // solid film: a finely divided plane, displaced like the points but coloured per pixel at full image resolution
+  const sm_ = new THREE.ShaderMaterial({
+    uniforms: U, transparent: true, depthWrite: true, side: THREE.DoubleSide,
+    extensions: { derivatives: true },
+    vertexShader: COMMON + `
+      varying vec2 vUv; varying vec3 vW;
+      void main(){
+        vUv = uv;
+        float lum = lumAt(uv), h = heatAt(uv), beam = beamAt(uv);
+        vec3 p = position;
+        p.z = lum*uRelief + h*uLift + beam*.06;
+        vec4 w = modelMatrix * vec4(p,1.); vW = w.xyz;
+        gl_Position = projectionMatrix * viewMatrix * w;
+      }`,
+    fragmentShader: COMMON + `
+      varying vec2 vUv; varying vec3 vW;
+      void main(){
+        float lum = lumAt(vUv), h = heatAt(vUv), beam = beamAt(vUv);
+        float lc = mix(lum, smoothstep(0., 1., lum), .6);
+        float tl = pow(lc, 1.35); tl = tl / (tl * .35 + .65);
+        vec3 base = mix(vec3(.035,.032,.03), vec3(.91,.89,.85), tl);
+        float hm = smoothstep(.04,.45,h);
+        vec3 col = mix(base, reds(h) * (.55 + .45*lum + .25), hm*.9);
+        // light the relief so the heat "mountain" reads as a solid shape
+        vec3 n = normalize(cross(dFdx(vW), dFdy(vW)));
+        if (!gl_FrontFacing) n = -n;
+        float diff = clamp(dot(n, normalize(vec3(-.35,.45,.85))), 0., 1.);
+        col *= mix(1., .45 + .75*diff, clamp(hm + .2, 0., 1.));
+        col += vec3(1.,.97,.9) * beam * .7;
+        col *= 1. - uDim;
+        gl_FragColor = vec4(col, uSurf);
+      }`
+  });
+  const surface = new THREE.Mesh(new THREE.PlaneGeometry(2, 2, innerWidth < 760 ? 160 : 255, innerWidth < 760 ? 160 : 255), sm_);
+  surface.renderOrder = 1;
+  scene.add(surface);
+
+  // opening: a translucent 3D chest (ribs, airways, heart) that flattens into its own X-ray shadow
+  const body = new THREE.Group(); body.visible = false; scene.add(body);
+  const UB = { uBody: { value: 0 }, uTint: { value: new THREE.Color(0xbfeff5) } };
+  const bodyMat = tint => new THREE.ShaderMaterial({
+    uniforms: { uBody: UB.uBody, uTint: { value: new THREE.Color(tint) } },
+    transparent: true, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending,
+    vertexShader: 'varying vec3 vN; varying vec3 vV; void main(){ vec4 mv = modelViewMatrix * vec4(position,1.); vN = normalize(normalMatrix * normal); vV = normalize(-mv.xyz); gl_Position = projectionMatrix * mv; }',
+    // edges facing away from the viewer glow, like bone outlines on film
+    fragmentShader: 'uniform float uBody; uniform vec3 uTint; varying vec3 vN; varying vec3 vV; void main(){ float f = 1. - abs(dot(normalize(vN), normalize(vV))); float a = (pow(f, 2.2) * .9 + .06) * uBody; gl_FragColor = vec4(uTint * a, 1.); }'
+  });
+  if (THREE.GLTFLoader) new THREE.GLTFLoader().load('data/chest.gltf.json', g => {
+    const tints = { bones: 0xefe9df, airway: 0x9a948a, heart: 0xd9533c };
+    g.scene.traverse(o => { if (o.isMesh) { const k = Object.keys(tints).find(n => (o.name + (o.parent ? o.parent.name : '')).includes(n)) || 'bones'; o.geometry.computeVertexNormals(); o.material = bodyMat(tints[k]); } });
+    body.add(g.scene); body.visible = true; BODY = true; apply(Ps);
+  }, undefined, () => {});
+  let BODY = false;
+
   const rect = (w, h, color) => {
-    const g = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-w, -h, 0), new THREE.Vector3(w, -h, 0), new THREE.Vector3(w, h, 0), new THREE.Vector3(-w, h, 0)]);
-    const l = new THREE.LineLoop(g, new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0 })); scene.add(l); return l;
+    const g = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-w, -h, 0.01), new THREE.Vector3(w, -h, 0.01), new THREE.Vector3(w, h, 0.01), new THREE.Vector3(-w, h, 0.01)]);
+    const l = new THREE.LineLoop(g, new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0, depthWrite: false })); scene.add(l); return l;
   };
-  const outer = rect(1.02, 1.02, 0x4cc0cc), padBox = rect(0.66, 0.84, 0xef6a5a);
+  const outer = rect(1.02, 1.02, 0x8f887d), padBox = rect(boxW, boxH, 0xd9533c);
 
-  // CNN feature-map stack behind the film
   const LAYERS = [[112, 1.6, -0.55], [56, 1.25, -1.0], [28, 0.95, -1.4], [14, 0.7, -1.75], [7, 0.5, -2.1]];
   const layerMeshes = LAYERS.map(([n, s, z]) => {
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(s, s), new THREE.MeshBasicMaterial({ map: tex(featureMap(filmP, n)), transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
-    m.userData = { z, n, s }; scene.add(m); return m;
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(s, s), new THREE.MeshBasicMaterial({ map: tex(featureMap(D.filmP, n)), transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+    m.userData = { z }; scene.add(m); return m;
   });
 
-  // 7×7 Grad-CAM columns on the last layer
   const colGeo = new THREE.BoxGeometry(1, 1, 1); colGeo.translate(0, 0, -0.5);
   const cols = new THREE.InstancedMesh(colGeo, new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false }), 49);
-  const camVals = [], ramp = t => { const st = [[254, 224, 210], [252, 146, 114], [222, 45, 38], [140, 5, 15]]; const f = clamp(t, 0, 1) * 3, i = Math.min(2, Math.floor(f)), r = f - i; return new THREE.Color(...st[i].map((c, k) => (c + (st[i + 1][k] - c) * r) / 255)); };
-  for (let cy = 0; cy < 7; cy++) for (let cx = 0; cx < 7; cx++) { const v = blobVal(LUNG, (cx + .5) / 7, (cy + .5) / 7); camVals.push(v); cols.setColorAt(cy * 7 + cx, ramp(0.15 + v * 0.85)); }
+  const ramp = t => { const st = [[254, 224, 210], [252, 146, 114], [222, 45, 38], [140, 5, 15]]; const f = clamp(t, 0, 1) * 3, i = Math.min(2, Math.floor(f)), r = f - i; return new THREE.Color(...st[i].map((c, k) => (c + (st[i + 1][k] - c) * r) / 255)); };
+  const camVals = D.camGood.flat();
+  camVals.forEach((v, i) => cols.setColorAt(i, ramp(0.15 + v * 0.85)));
   scene.add(cols);
   const dummy = new THREE.Object3D();
   function placeCols(z, grow) {
@@ -272,40 +424,78 @@ footer code{font-family:var(--f-mono);font-size:13px}
     cols.instanceMatrix.needsUpdate = true;
   }
 
-  // experiment bars
-  const EXP = [['E0', 0.7468, 0x8ea2ad], ['E1a', 0.8333, 0x5f9ea8], ['E1b', 0.9407, 0x4cc0cc]];
-  const barGeo = new THREE.BoxGeometry(0.3, 1, 0.3); barGeo.translate(0, 0.5, 0);
-  const bars = EXP.map(([, , c], i) => {
-    const m = new THREE.Mesh(barGeo, new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: 0 }));
-    const e = new THREE.LineSegments(new THREE.EdgesGeometry(barGeo), new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0 }));
-    m.add(e); m.position.set((i - 1) * 0.62, -0.95, 0.55); scene.add(m); return m;
+  // accuracy bars for the three test settings, with missed-pneumonia counts
+  const EV = D.s ? D.s.eval : [{ setting: 'clean / plain test', acc: 0.8205, FN: 1 }, { setting: 'padded / padded test', acc: 0.8622, FN: 3 }, { setting: 'padded / plain test', acc: 0.9247, FN: 24 }];
+  const barColors = [0x8ea2ad, 0x5f9ea8, 0x4cc0cc];
+  const barGeo = new THREE.BoxGeometry(0.22, 1, 0.22); barGeo.translate(0, 0.5, 0);
+  const bars = EV.slice(0, 3).map((e, i) => {
+    const m = new THREE.Mesh(barGeo, new THREE.MeshBasicMaterial({ color: barColors[i], transparent: true, opacity: 0 }));
+    m.add(new THREE.LineSegments(new THREE.EdgesGeometry(barGeo), new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, depthWrite: false })));
+    m.position.set((i - 1) * 0.66, -0.95, 0.55); scene.add(m); return m;
   });
 
   /* ---------- projected HTML labels ---------- */
   const labelsEl = $('labels'), LBL = [];
   const addLabel = (text, cls, get) => { const el = document.createElement('div'); el.className = 'lbl ' + cls; el.textContent = text; labelsEl.appendChild(el); LBL.push({ el, get }); };
   const tmpV = new THREE.Vector3();
-  LAYERS.forEach(([n, s], i) => addLabel(i === 0 ? '112×112' : n + '×' + n, 'k', () => [layerMeshes[i].position.x - s / 2, layerMeshes[i].position.y + s / 2 + 0.08, layerMeshes[i].position.z, layerMeshes[i].material.opacity]));
-  addLabel('입력 224×224', 'k', () => [-1, 1.1, 0, layerMeshes[0].material.opacity]);
-  addLabel('검은 여백', 'k', () => [0, 0.93, 0.02, padBox.material.opacity * 0.9]);
-  EXP.forEach(([name, v], i) => {
-    addLabel(v.toFixed(4), 'v', () => [bars[i].position.x, bars[i].position.y + bars[i].scale.y + 0.1, bars[i].position.z, bars[i].material.opacity]);
-    addLabel(name, '', () => [bars[i].position.x, -1.06, bars[i].position.z + 0.2, bars[i].material.opacity]);
+  LAYERS.forEach(([n, s], i) => addLabel(n + '×' + n, '', () => [layerMeshes[i].position.x - s / 2, layerMeshes[i].position.y + s / 2 + 0.08, layerMeshes[i].position.z, layerMeshes[i].material.opacity]));
+  addLabel('입력 224×224', '', () => [-1, 1.1, 0, layerMeshes[0].material.opacity]);
+  addLabel('검은 띠', 'r', () => [0, (boxH + 1) / 2, 0.03, padBox.material.opacity * 0.9]);
+  addLabel('검은 띠', 'r', () => [0, -(boxH + 1) / 2, 0.03, padBox.material.opacity * 0.9]);
+  addLabel('촬영 글자 쪽', 'r', () => [0.8 * surface.scale.x, 0.95 * surface.scale.y, 0.7, U.uHE.value]);
+  const SHORT = { 'clean / plain test': 'clean · 띠 없는 시험', 'padded / padded test': 'padded · 띠 있는 시험', 'padded / plain test': 'padded · 띠 없는 시험' };
+  // scene 07 chart (SVG): bars = missed pneumonia, line = accuracy
+  const chartEl = $('chart');
+  const CW = 560, CH = 420, L = 30, R = 530, base = 360, barTop = 170, lineTop = 40, lineBot = 140;
+  const fnMax = Math.max(...EV.slice(0, 3).map(e => e.FN), 1);
+  const NAMES = [['clean 모델', '띠 없는 시험'], ['padded 모델', '띠 있는 시험'], ['padded 모델', '띠 없는 시험']];
+  const xs = [0, 1, 2].map(i => L + (R - L) * (i + .5) / 3);
+  const accY = a => lineBot - (a - 0.8) / (0.95 - 0.8) * (lineBot - lineTop);
+  const svgNS = 'http://www.w3.org/2000/svg';
+  let svg = `<svg viewBox="0 0 ${CW} ${CH}" role="img"><rect class="hl" x="${xs[2] - 80}" y="20" width="160" height="${base - 4}"/>`;
+  svg += `<text class="hd" x="${L}" y="16">정확도</text><text class="hd" x="${L}" y="${barTop - 6}" style="fill:var(--red)">놓친 폐렴 (명)</text>`;
+  svg += `<line class="ax" x1="${L}" x2="${R}" y1="${base}" y2="${base}"/><line class="ax" x1="${L}" x2="${R}" y1="${lineBot + 8}" y2="${lineBot + 8}" stroke-dasharray="2 4"/>`;
+  EV.slice(0, 3).forEach((e, i) => {
+    svg += `<rect class="bar${i < 2 ? ' dim' : ''}" data-i="${i}" x="${xs[i] - 26}" width="52" y="${base}" height="0"/>`;
+    svg += `<text class="tr" data-fn="${i}" x="${xs[i]}" y="${base - 8}" text-anchor="middle" opacity="0">${e.FN}</text>`;
+    svg += `<text class="t" x="${xs[i]}" y="${base + 22}" text-anchor="middle">${NAMES[i][0]}</text><text class="t" x="${xs[i]}" y="${base + 40}" text-anchor="middle">${NAMES[i][1]}</text>`;
+    svg += `<text class="tv" data-acc="${i}" x="${xs[i]}" y="${accY(e.acc) - 14}" text-anchor="middle" opacity="0">${e.acc.toFixed(3)}</text>`;
   });
+  const pts = EV.slice(0, 3).map((e, i) => `${xs[i]},${accY(e.acc)}`).join(' ');
+  svg += `<polyline class="line" id="accLine" points="${pts}"/>`;
+  EV.slice(0, 3).forEach((e, i) => { svg += `<circle class="dot" data-dot="${i}" cx="${xs[i]}" cy="${accY(e.acc)}" r="4.5" opacity="0"/>`; });
+  chartEl.innerHTML = svg + '</svg>';
+  const accLine = chartEl.querySelector('#accLine'); const lineLen = accLine.getTotalLength ? accLine.getTotalLength() : 600;
+  accLine.style.strokeDasharray = lineLen; accLine.style.strokeDashoffset = lineLen;
+  function drawChart(p) {
+    const v = sm(0.78, 0.81, p) * (1 - sm(0.88, 0.9, p));
+    chartEl.style.opacity = v.toFixed(3);
+    EV.slice(0, 3).forEach((e, i) => {
+      const g = sm(0.795 + i * 0.012, 0.825 + i * 0.012, p), h = (base - barTop - 30) * e.FN / fnMax * g;
+      const r = chartEl.querySelector(`[data-i="${i}"]`); r.setAttribute('y', base - Math.max(h, g > 0 ? 1.5 : 0)); r.setAttribute('height', Math.max(h, g > 0 ? 1.5 : 0));
+      const t = chartEl.querySelector(`[data-fn="${i}"]`); t.setAttribute('y', base - h - 10); t.setAttribute('opacity', g.toFixed(2));
+      const d = sm(0.83 + i * 0.012, 0.845 + i * 0.012, p);
+      chartEl.querySelector(`[data-dot="${i}"]`).setAttribute('opacity', d.toFixed(2));
+      chartEl.querySelector(`[data-acc="${i}"]`).setAttribute('opacity', d.toFixed(2));
+    });
+    accLine.style.strokeDashoffset = (lineLen * (1 - sm(0.83, 0.865, p))).toFixed(1);
+  }
 
-  /* ---------- camera path: keyframes in p ---------- */
+  /* ---------- camera path ---------- */
   const K = [
     [0.00, [0, -0.15, 4.6], [0, 0, 0]],
     [0.11, [0, -0.35, 3.3], [0, 0, 0]],
-    [0.25, [0, -0.3, 3.1], [0, 0, 0]],
-    [0.32, [3.6, 1.3, 1.3], [0, 0, -1.15]],
-    [0.40, [3.1, 1.9, 0.2], [0, 0, -1.35]],
-    [0.47, [0, -2.7, 2.15], [0, 0.05, 0.15]],
-    [0.55, [1.3, -2.45, 2.2], [0, 0.05, 0.15]],
-    [0.63, [0, -2.55, 2.45], [0, 0, 0.1]],
-    [0.70, [-1.2, -2.3, 2.45], [0, 0, 0.1]],
-    [0.76, [0, -0.7, 3.7], [0, -0.1, 0.3]],
-    [0.85, [0.15, -0.6, 3.6], [0, -0.1, 0.3]],
+    [0.24, [0, -0.3, 3.1], [0, 0, 0]],
+    [0.31, [3.6, 1.3, 1.3], [0, 0, -1.15]],
+    [0.39, [3.1, 1.9, 0.2], [0, 0, -1.35]],
+    [0.46, [0, -2.7, 2.15], [0, 0.05, 0.15]],
+    [0.52, [1.3, -2.45, 2.2], [0, 0.05, 0.15]],
+    [0.57, [0, -0.35, 3.2], [0, 0, 0]],
+    [0.64, [0, -0.3, 3.1], [0, 0, 0]],
+    [0.70, [0.6, -2.5, 2.45], [0, 0.1, 0.1]],
+    [0.77, [-1.0, -2.3, 2.45], [0, 0.1, 0.1]],
+    [0.81, [0, -0.7, 3.7], [0, -0.1, 0.3]],
+    [0.87, [0.15, -0.6, 3.6], [0, -0.1, 0.3]],
     [1.00, [0, -0.1, 4.6], [0, 0, 0]]
   ];
   const cpos = new THREE.Vector3(), ctgt = new THREE.Vector3();
@@ -318,34 +508,61 @@ footer code{font-family:var(--f-mono);font-size:13px}
 
   /* ---------- scroll → state ---------- */
   const caps = [...document.querySelectorAll('.cap')];
-  const names = ['도입', '정상과 폐렴', '모델 속으로', '제대로 볼 때', '반전', '해결 과정', '정리'];
-  let P = 0, W = 1, H = 1, narrow = false;
+  const names = ['도입', '정상과 폐렴', '모델 속으로', '제대로 볼 때', '숨은 지름길', '반전', '점수의 함정', '정리'];
+  let P = 0, Ps = 0, W = 1, H = 1, narrow = false, lastStage = -1;
+  $('ticks').innerHTML = '<i></i>'.repeat(8);
+  // adaptive quality: if frames get slow, drop bloom first, then render resolution
+  const Q = { scale: 1, times: [], last: performance.now() };
   const mouse = { x: 0, y: 0, tx: 0, ty: 0 };
 
   function apply(p) {
-    U.uScatter.value = 1 - sm(0.0, 0.08, p);
+    // opening: 3D chest turns to face us, flattens, dissolves into points, and the points settle into the X-ray
+    if (BODY) {
+      const flat = sm(0.055, 0.09, p);
+      UB.uBody.value = 1 - sm(0.075, 0.1, p);
+      body.visible = UB.uBody.value > 0.01;
+      body.rotation.y = lerp(-0.9 + 0.35 * Math.sin(U.uTime.value * 0.25) * (1 - sm(0, 0.04, p)), 0, sm(0.0, 0.055, p));
+      body.scale.set(0.82, 0.82, 0.82 * (1 - flat * 0.97));
+      body.position.set(0, -0.05, 0.02);
+      U.uScatter.value = 1 - sm(0.07, 0.105, p);
+      U.uPts.value = sm(0.06, 0.08, p) * (1 - sm(0.105, 0.125, p));
+      U.uSurf.value = sm(0.095, 0.12, p);
+    } else {
+      U.uScatter.value = 1 - sm(0.0, 0.08, p);
+      U.uSurf.value = sm(0.065, 0.11, p);
+      U.uPts.value = 1 - sm(0.08, 0.12, p);
+    }
+    // film proportions: normal child → (scan) pneumonia child → square padded film → normal child
+    const [nx, ny] = fit(aspN), [px, py] = fit(aspP), [tx, ty] = fit(aspT);
+    const k = sm(0.13, 0.23, p), q = sm(0.55, 0.59, p) * (1 - sm(0.645, 0.655, p)), tt = sm(0.645, 0.655, p);
+    const fx = lerp(lerp(lerp(nx, px, k), 1, q), tx, tt), fy = lerp(lerp(lerp(ny, py, k), 1, q), ty, tt);
+    surface.scale.set(fx, fy, 1); points.scale.set(fx, fy, 1);
     U.uMixOn.value = sm(0.12, 0.13, p);
     U.uScan.value = lerp(-0.08, 1.08, sm(0.13, 0.23, p));
     U.uBeam.value = sm(0.12, 0.14, p) * (1 - sm(0.22, 0.25, p));
-    U.uHL.value = sm(0.42, 0.50, p) * (1 - sm(0.56, 0.60, p));
-    U.uPad.value = sm(0.56, 0.61, p) * (1 - sm(0.86, 0.92, p));
-    U.uHE.value = sm(0.61, 0.67, p) * (1 - sm(0.71, 0.75, p));
-    U.uDim.value = 0.75 * sm(0.71, 0.75, p) * (1 - sm(0.85, 0.89, p));
-    U.uRelief.value = 0.12 + 0.1 * sm(0.42, 0.5, p) * (1 - sm(0.85, 0.95, p));
+    U.uHL.value = sm(0.42, 0.48, p) * (1 - sm(0.52, 0.55, p));
+    U.uPad.value = sm(0.55, 0.59, p) * (1 - sm(0.645, 0.655, p));
+    const dip = sm(0.632, 0.648, p) * (1 - sm(0.656, 0.672, p));
+    U.uToN.value = sm(0.649, 0.655, p);
+    U.uHE.value = sm(0.67, 0.72, p) * (1 - sm(0.77, 0.80, p));
+    U.uDim.value = Math.max(0.96 * sm(0.77, 0.80, p) * (1 - sm(0.885, 0.91, p)), 0.92 * dip);
+    U.uRelief.value = 0.04 * sm(0.26, 0.30, p) * (1 - sm(0.39, 0.43, p)) + 0.03 * sm(0.41, 0.46, p) * (1 - sm(0.52, 0.56, p)) + 0.03 * sm(0.67, 0.71, p) * (1 - sm(0.77, 0.80, p));
+    U.uLift.value = lerp(0.6, 0.42, sm(0.6, 0.66, p));
 
-    outer.material.opacity = 0.35 * sm(0.26, 0.3, p) * (1 - sm(0.42, 0.46, p)) + 0.5 * U.uPad.value * (1 - sm(0.71, 0.74, p));
-    padBox.material.opacity = 0.9 * sm(0.58, 0.62, p) * (1 - sm(0.71, 0.74, p));
+    outer.material.opacity = 0.35 * sm(0.26, 0.3, p) * (1 - sm(0.40, 0.44, p)) + 0.5 * U.uPad.value;
+    padBox.material.opacity = 0.9 * sm(0.57, 0.60, p) * (1 - sm(0.64, 0.66, p));
 
-    const open = sm(0.27, 0.35, p), shut = sm(0.41, 0.46, p), L = open * (1 - shut);
-    layerMeshes.forEach((m, i) => { const st = sm(0.27 + i * 0.012, 0.33 + i * 0.012, p); m.position.z = m.userData.z * st * (1 - shut * 0.6); m.material.opacity = 0.85 * Math.min(st, 1 - shut); });
-    placeCols(layerMeshes[4].position.z, sm(0.34, 0.39, p));
-    cols.material.opacity = 0.95 * sm(0.33, 0.35, p) * (1 - shut);
+    const shut = sm(0.39, 0.43, p);
+    layerMeshes.forEach((m, i) => { const st = sm(0.26 + i * 0.012, 0.32 + i * 0.012, p); m.position.z = m.userData.z * st * (1 - shut * 0.6); m.material.opacity = 0.85 * Math.min(st, 1 - shut); m.visible = m.material.opacity > 0.01; });
+    placeCols(layerMeshes[4].position.z, sm(0.32, 0.37, p));
+    cols.material.opacity = 0.95 * sm(0.31, 0.33, p) * (1 - shut);
+    cols.visible = cols.material.opacity > 0.01;
 
-    const bv = sm(0.72, 0.75, p) * (1 - sm(0.85, 0.88, p));
-    bars.forEach((b, i) => { const g = sm(0.74 + i * 0.02, 0.78 + i * 0.02, p); b.scale.y = Math.max(0.001, EXP[i][1] * 1.6 * g); b.material.opacity = 0.85 * bv; b.children[0].material.opacity = 0.5 * bv; });
+    const bv = 0; drawChart(p);
+    bars.forEach((b, i) => { const g = sm(0.79 + i * 0.02, 0.83 + i * 0.02, p); b.scale.y = Math.max(0.001, EV[i].acc * 1.5 * g); b.material.opacity = 0.38 * bv; b.children[0].material.opacity = 0.95 * bv; b.visible = bv > 0.01; });
 
-    $('b1').style.width = (68 * sm(0.62, 0.67, p)) + '%';
-    $('b2').style.width = (21 * sm(0.62, 0.67, p)) + '%';
+    $('b1').style.width = (18 / 0.4 * sm(0.58, 0.62, p)) + '%';
+    $('b2').style.width = (32 / 0.4 * sm(0.58, 0.62, p)) + '%';
 
     let stage = 0;
     caps.forEach((c, i) => {
@@ -356,44 +573,56 @@ footer code{font-family:var(--f-mono);font-size:13px}
       c.style.pointerEvents = o > 0.5 ? 'auto' : 'none';
       if (p >= a) stage = i;
     });
-    $('stageName').textContent = names[stage];
-    $('prog').style.width = (p * 100).toFixed(1) + '%';
-    $('pval').textContent = 'p ' + p.toFixed(2);
+    if (stage !== lastStage) { lastStage = stage; $('stageName').textContent = names[stage]; [...$('ticks').children].forEach((t, i) => t.classList.toggle('on', i <= stage)); }
   }
 
   function resize() {
     const r = canvas.getBoundingClientRect(); W = Math.max(1, r.width); H = Math.max(1, r.height);
     narrow = W < 760;
-    const dpr = Math.min(devicePixelRatio || 1, 1.75);
+    const dpr = Math.min(devicePixelRatio || 1, narrow ? 1.5 : 1.75) * Q.scale;
     renderer.setPixelRatio(dpr); renderer.setSize(W, H, false);
+    if (composer) { composer.setPixelRatio(dpr); composer.setSize(W, H); finish.uniforms.uRes.value.set(W * dpr, H * dpr); }
     camera.aspect = W / H;
-    // push the scene away from the caption panel: right on desktop, up on phones
     if (narrow) camera.setViewOffset(W, H, 0, H * 0.2, W, H); else camera.setViewOffset(W, H, -W * 0.16, 0, W, H);
     camera.fov = narrow ? 52 : 40;
     camera.updateProjectionMatrix();
     U.uSize.value = 13.5 * dpr * (H / 800) * (narrow ? 0.85 : 1);
+    // phones: pull the bars closer and shorten their names so labels stay on screen
+    bars.forEach((b, i) => { b.position.x = (i - 1) * (narrow ? 0.5 : 0.66); });
+    const NARROW = ['clean', 'padded\n띠 있음', 'padded\n띠 없음'];
+    [...labelsEl.querySelectorAll('.bn')].forEach((el, i) => { el.textContent = narrow ? NARROW[i] : (SHORT[EV[i].setting] || EV[i].setting); });
+    labelsEl.classList.toggle('narrow', narrow);
   }
 
   const sec = $('scrolly');
   const progress = () => { const r = sec.getBoundingClientRect(); return clamp(-r.top / Math.max(1, r.height - innerHeight), 0, 1); };
   let visible = true;
   new IntersectionObserver(es => { visible = es[0].isIntersecting; }).observe(sec);
-  addEventListener('scroll', () => { P = progress(); apply(P); }, { passive: true });
-  addEventListener('resize', () => { resize(); apply(P); });
+  addEventListener('scroll', () => { P = progress(); if (reduce) { Ps = P; apply(Ps); } }, { passive: true });
+  addEventListener('resize', () => { resize(); apply(Ps); });
   addEventListener('pointermove', e => { mouse.tx = e.clientX / innerWidth - 0.5; mouse.ty = e.clientY / innerHeight - 0.5; }, { passive: true });
 
   function frame(now) {
     requestAnimationFrame(frame);
     if (!visible) return;
     const t = now / 1000; U.uTime.value = t;
-    camAt(P);
+    const dt = Math.min(0.1, Math.max(0, (now - Q.last) / 1000)); Q.last = now;
+    if (!reduce && Math.abs(P - Ps) > 1e-5) { Ps += (P - Ps) * (1 - Math.exp(-dt * 6)); apply(Ps); }
+    Q.times.push(dt);
+    if (Q.times.length >= 45) {
+      const avg = Q.times.reduce((a, b) => a + b, 0) / Q.times.length; Q.times = [];
+      if (avg > 1 / 38) { if (bloom && bloom.enabled) bloom.enabled = false; else if (Q.scale > 0.6) { Q.scale *= 0.85; resize(); } }
+    }
+    camAt(Ps);
+    if (BODY && body.visible && Ps < 0.05) apply(Ps);
     if (!reduce) {
       mouse.x += (mouse.tx - mouse.x) * 0.05; mouse.y += (mouse.ty - mouse.y) * 0.05;
       cpos.x += Math.sin(t * 0.25) * 0.06 + mouse.x * 0.35;
       cpos.y += Math.cos(t * 0.2) * 0.04 - mouse.y * 0.25;
     }
-    camera.position.copy(cpos); camera.up.set(0, 0, 1); camera.up.set(0, 1, 0); camera.lookAt(ctgt);
-    renderer.render(scene, camera);
+    camera.position.copy(cpos); camera.lookAt(ctgt);
+    if (composer) { finish.uniforms.uTime.value = t; composer.render(); } else renderer.render(scene, camera);
+    if (!loaderDone) { loaderDone = true; $('loader').classList.add('done'); }
     for (const L of LBL) {
       const [x, y, z, o] = L.get();
       if (o < 0.02) { L.el.style.opacity = 0; continue; }
@@ -402,6 +631,7 @@ footer code{font-family:var(--f-mono);font-size:13px}
       L.el.style.transform = `translate(${((tmpV.x * 0.5 + 0.5) * W).toFixed(1)}px, ${((-tmpV.y * 0.5 + 0.5) * H).toFixed(1)}px) translate(-50%,-50%)`;
     }
   }
-  resize(); P = progress(); apply(P); requestAnimationFrame(frame);
+  let loaderDone = false;
+  resize(); P = Ps = progress(); apply(Ps); requestAnimationFrame(frame);
 })();
 </script>
